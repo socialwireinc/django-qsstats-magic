@@ -105,7 +105,16 @@ class QuerySetStats(object):
 
         start, _ = get_bounds(start, interval.rstrip('s'))
         _, end = get_bounds(end, interval.rstrip('s'))
-        interval_sql = get_interval_sql(date_field, interval, engine)
+
+        # note: since we're building raw_sql here, we need to prepend field
+        # by table name!
+
+        if engine == 'postgresql':
+          table_name = self.qs.query.get_initial_alias()
+          sql_date_field = "%s.%s" % (table_name, date_field)
+        else:
+          sql_date_field = date_field
+        interval_sql = get_interval_sql(sql_date_field, interval, engine)
 
         kwargs = {'%s__range' % date_field : (start, end)}
         aggregate_data = self.qs.extra(select = {'d': interval_sql}).\
